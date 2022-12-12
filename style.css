@@ -1,0 +1,44 @@
+html{
+    font-family: sans-serif;
+}
+
+body {
+    margin: 0;
+}
+  
+h1 {
+    color: navy;
+}
+
+pre{
+    white-space: pre-wrap;
+}
+
+.content{
+    padding: 100px;
+    padding-top: 50px;
+    background-color: lightblue;
+}
+
+.navbar {
+    z-index: 9999;
+    overflow: hidden;
+    background-color: #5c5c5c;
+    position: fixed; 
+    top: 0; 
+    width: 100%;
+  }
+  
+  .navbar a {
+    float: left;
+    display: block;
+    color: #f2f2f2;
+    text-align: center;
+    padding: 12px 24px;
+    text-decoration: none;
+  }
+  
+  .navbar a:hover {
+    background: rgb(19, 19, 19);
+    color: #ffffff;
+  }
