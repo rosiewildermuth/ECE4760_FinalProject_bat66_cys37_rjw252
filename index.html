@@ -80,17 +80,17 @@
             </p>
 
             <p>
-                We spent a lot of time in the beginning reading papers and doing research about industry practices for making sound like they are coming from specific directions 
-                and distances, and found out about Head-Related Transfer Functions (HRTFs). In addition to the amplitude difference and delay for each ear depending on relative 
-                distance to an audio source, HRTFs define a frequency related transformation that is dependent on the angle of the source to each ear in 3D space. This means that 
-                an audio signal is transformed by the external human ear structure, and this transformation differs depending on the angle of the source to the ear, as well as each 
-                person’s individual ear shape and structure. These HRTFs are also usually calculated experimentally, by placing small microphones in the ears of a human or a 
-                mannequin and recording the baseline impulse response of each ear after sampling an input from many different locations in 3D space to create a database of HRTFs 
+                We spent a lot of time in the beginning reading papers and doing research about industry practices for making sound appear to be coming from specific directions 
+                and distances. We found that most industry practices use Head-Related Transfer Functions (HRTFs), which define a frequency related transformation on the audio 
+                that is dependent on the angle of the source to each ear in 3D space. This is because
+                audio signals are transformed by the external human ear structure, and this transformation differs depending on the angle of the source to the ear, as well as each 
+                person’s individual ear shape and structure. These HRTFs are usually calculated experimentally by placing small microphones in the ears of a human or a 
+                mannequin and recording the baseline impulse response of each ear after sampling an input from many different locations in 3D space. These samples are used to create 
+                a database of HRTFs 
                 which then can be applied to spatialize audio. We briefly entertained the possibility of obtaining HRTFs and using them for our transformation, but quickly realized 
                 that the large size of each HRTF combined with the large number of HRTFs we would need to cover a wide range of spatial locations would be impossible given the memory 
-                and processing constraints of our hardware. We finally settled to just focus on azimuth (side to side, disregarding elevation changes) movement of audio sources, and 
-                only implementing the amplitude difference, delay (phase difference), and low pass frequency to simulate a muffling effect as to represent the frequency based 
-                transformation seen in industry practices using HRTFs.
+                and processing constraints of our hardware. Thus, we decided to focus on azimuth (side to side, disregarding elevation changes) movement of audio sources, and 
+                implemented other methods to achieve the spatial audio effect: amplitude difference, delay (phase difference), and low pass filtering.
             </p>
 
             <a id="design1" class="anchor" href="design1" aria-hidden="true"></a>
@@ -100,31 +100,34 @@
 
             <p>
                 The goal of our program is to read audio input data, process it according to information about the location of the virtual audio source, then output the processed audio data in real time. 
-                We designed the program flow and mathematical algorithms, as well as applied optimizations to our program to meet this goal. 
+                We designed the program flow and mathematical algorithms, as well as applied optimizations to our program to meet the time constraints of real-time processing. 
             </p>
 
             <h2>Logical Structure</h2>
             <p>
-                For our main program logic, every 80 microseconds (12.5 kHz), we read an audio sample from the ADC into an input buffer and output a processed audio sample stored in an output buffer, while concurrently processing the audio information from input to output. 
+                For our main program logic, we read an audio sample from the ADC into an input buffer and output a processed audio sample stored in an output buffer every 80 microseconds (12.5 kHz sampling frequency).
+                Concurrently to our input/output streaming, we also process the input audio signal to transform it into a spatialized output audio signal.
                 This guarantees that we are consistently reading the input audio without skipping or lagging, and that we are outputting samples at the same rate so we don’t pitch shift or cut off parts of the audio stream.
             </p>
 
             <h2>Audio Processing Algorithms</h2>
             <p>
                 The processing includes amplitude scaling, introducing a delay between the two channels, and a digital low pass filter through convolution, which we can do by performing the Tukey-Cooley Fast Fourier Transform (FFT) on the audio input samples.
-                Then the convolution becomes element-wise multiplication in frequency domain, then we convert back to time domain through IFFT, which using the properties of FFT, can be calculated by scaling the conjugate of the FFT of the conjugate of the frequency domain signal. 
+                When our samples are converted to the frequency domain, the convolution simply becomes element-wise multiplication, so we can perform the multiplication and then convert back to time domain through performing an IFFT.
+                Our IFFT operation uses the properties of FFT by scaling the conjugate of the FFT of the conjugate of the frequency domain signal.
+                Though this sounds complicated, it is actually faster to convert to frequency domain, multiply, and then convert back to time domain, rather than trying to do the calculations in the time domain.
             </p>
             <p>
                 We designed and implemented our own algorithms for the relative amplitude of the audio source to each ear based on angle and distance, the relative delay between the two ears, 
-                and the cutoff frequency and appropriate transfer function to use as a digital low pass filter. 
+                and the cutoff frequency for our digital lowpass transfer function. 
             </p>
             <p>
-                The angle based amplitude calculation first scales the amplitude between 500 and 1000 based on the angle of the source to the ear. W
-                e define 0 degrees to an ear as the same direction as “forwards” from the face of the head, and positive degrees counterclockwise. 
-                The left ear therefore has a maximum amplitude at 45 degrees, and the right ear at -45 degrees. This relationship is shown as the orange shapes in the diagrams below, 
-                with the radius representing amplitude at that direction. We chose this model because we knew the shape of the external ear would attenuate sound more from certain angles, 
+                The angle-based amplitude calculation first scales the amplitude between 500 and 1000 based on the angle of the source to the ear. 
+                We define 0 degrees to an ear the angle facing directly forward from a person's head, and increment degrees in the counterclockwise direction. 
+                The left ear therefore has a maximum amplitude at 45 degrees, and the right ear at -45 degrees. This relationship is shown as the orange shapes in Figures 1-4 below, 
+                with the radius representing the amplitude at that angle. We chose this model because we knew the shape of the external ear would attenuate sound more from certain angles, 
                 and we also wanted amplitudes to be softer behind the head than in front. 
-                The choice of cosine was intuitive to make the transition from minimum to maximum amplitude very smooth, as proven in the roundness of the diagram.
+                The choice of cosine was intuitive to make the transition from minimum to maximum amplitude very smooth, as can be seen in the roundness of the diagram.
             </p>
 
             <div class="box">
@@ -152,7 +155,7 @@
             </div>
 
             <p>
-                After calculating the angle based amplitude as described above, we then perform a scaling inversely proportional to the distance. 
+                After calculating the angle-based amplitude as described above, we then scaled the amplitude inversely proportional to the distance. 
                 We know from the inverse-square law that the intensity of sound is inversely proportional to the radius squared. We also know that the intensity of a sound pressure 
                 wave is proportional to the amplitude squared, and could therefore deduce an inversely proportional relationship. 
                 We then fine tuned the constants in the relationship to fit our distance range (0 to 500 meters).
