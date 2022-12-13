@@ -11,7 +11,8 @@
             <a class="active" href="#">Home</a>
             <a href="#intro">Introduction</a>
             <a href="#design1">High Level Design</a>
-            <a href="#design2">Program/hardware design</a>
+            <a href="#design2">Hardware design</a>
+            <a href="#design3">Software design</a>
             <a href="#results">Results</a>
             <a href="#conclusions">Conclusions</a>
             <a href="#appendix">Appendix</a>
@@ -26,8 +27,8 @@
 
         <section id="main-content">
 
-            <p style="color:#ffffff">
-                ECE 4760 Microcontrollers Fall 2022 Final Project
+            <p>
+                This webpage is the final report for our final project in ECE 4760 Microcontrollers Fall 2022.
             </p>
 
             <a id="intro" class="anchor" href="intro" aria-hidden="true">
@@ -35,12 +36,20 @@
             <br><hr><br>
             <h1>Project Introduction</h1>
 
-            <pre>
-Our project is a real time spatial audio simulator that allows the user to adjust their aural experience by changing the location and distance of a virtual audio source.
+            <p>
+                Our project is a real time spatial audio simulator that allows the user to adjust their aural experience by changing the angle and distance of a virtual audio source. <br>
 
-Inspired by the concept of 8D audio, we chose to implement a user controlled spatial audio system. 8D audio is a type of audio effect where, when wearing headphones, sounds seem to be coming from different locations in the room. Usually, this effect is implemented on specific songs and heavily edited to convince the user of the locational aspects of the song. We approached an alternative to this, where the user could control the location of a “virtual” audio source. By just putting on a pair of headphones, the user is immersed into an aural landscape that is under their complete control. The user is able to interface with a GUI to adjust the distance, angle, volume, and filtering of the audio they are inputting into the system in real time. 
+                Inspired by the concept of 8D audio, we chose to implement a user controlled spatial audio system.
 
-</pre>
+                8D audio is a type of audio effect where, when wearing headphones, sounds seem to be coming from different locations in the room. 
+                Usually, this effect is implemented on specific songs and heavily edited to convince the user of the locational aspects of the song. 
+
+                We approached an alternative to this, where the user could control the location of a “virtual” audio source, moving it around in real-time. 
+                
+                By just putting on a pair of headphones, the user is immersed into an aural landscape that is under their complete control. 
+                The user is able to interface with a GUI to adjust the distance, angle, volume, and filtering of the audio they are inputting into the system in real time. 
+
+            </p>
 
 <a id="design1" class="anchor" href="design1" aria-hidden="true">
                 <span aria-hidden="true" class="octicon octicon-link"></span></a>
@@ -58,23 +67,95 @@ One of the issues that we have to keep in mind when demonstrating our project is
 <a id="design2" class="anchor" href="design2" aria-hidden="true">
     <span aria-hidden="true" class="octicon octicon-link"></span></a>
 <br><hr><br>
-<h1>Program/hardware design</h1>
+<h1>Hardware Design</h1>
+
+<h2>ADC Input</h2>
+<p>
+In order to be able to take any audio source as an input to the project, we needed to be able to sample audio sources through the analog to digital converter (ADC) on the Raspberry Pi Pico. 
+To do this the audio jack takes in the audio voltage inputs. This input is then passed through a high-pass biasing filter, which shifts the voltage waveforms up to contain only positive voltage components. 
+This was done because the ADC can only sample positive waveforms. Anything fed to the ADC that has a negative value will be set to zero. 
+While this seems relatively minor, this zeroing of values created static in the background of the audio that was quite noticeable. 
+By shifting the voltage waves to center around 3.3 Volts instead of 0, static was able to be minimized. 
+Finally, the voltage input was put through a low pass filter with a cutoff frequency of approximately 5kHz. 
+This was done to filter out aliasing of relevant frequencies. Because of the limited RAM capabilities of the RP2040, we did not sample at all frequencies. 
+This created aliasing of the unsampled frequencies in the audible range that distorted the audio. 
+By implementing a low pass filter with a cutoff frequency at approximately the maximum frequency sampled, we were able to diminish the volume of the aliasing to lessen the distortion. 
+The audio input was then sampled through the ADC which allowed us to have frequently updating audio input.
+</p>
+
+<h2>DAC Output</h2>
+<p>
+After the audio processing was complete on the RP2040, the voltage signals were output through I2C to a digital to analog converter (DAC). 
+This converter was an external chip to the Raspberry Pi Pico whose pinout can be found in Appendix C. 
+The two audio outputs of the DAC were wired to the two output pins of the audio jack. 
+Each output pin on the audio jack connects to a single ear of the headphones that are plugged in. 
+Thus, each ear was able to have a unique sound profile allowing for a more comprehensive aural experience. 
+</p>
+
+<h2>VGA</h2>
+<p>
+The final hardware component of this project was the Video Graphics Array (VGA) which was used to display the FFT data, Audio signal input, and for debugging processes during code development. 
+The wiring arrangement can be found in Appendix C. The three color pins were connected through 330 Ohm resistors to create a voltage divider to keep the output voltage in a usable range. 
+Other than the three color pins, the ground, HSYNC, and VSYNC were also connected to the VGA output to display the visual outputs of our project.
+
+Outside of the code provided by previous labs of this course, we did not use or reference any other designs or code from any other source. 
+All of the algorithms we used were developed by either ourselves or the ECE 4760 Course Staff.
+</p>
+
+<a id="design3" class="anchor" href="design3" aria-hidden="true">
+    <span aria-hidden="true" class="octicon octicon-link"></span></a>
+<br><hr><br>
+<h1>Software and Algorithm Design</h1>
+<h2> Relative Amplitude Calculations </h2>
+<p> 
+    The primary component of our audio spatialization is amplitude scaling of the output based on angle and distance from the audio source to each ear. <br>
+</p>
+<div class="box">
+    <div class="tightbox">
+        <p>dL:18.03, DR: 18.03 <br> LA: 799, RA: 799</p>
+    </div>&nbsp;&nbsp;
+    <div class="tightbox">
+        <img src="images/dist_15_front.PNG" width="520" height="400"> 
+    </div>&nbsp;
+    <div class="tightbox">
+        <img src="images/deg_15_front.PNG" width="650" height="400"> 
+    </div>
+</div>
+<br><br>
+<div class="box">
+    <div class="tightbox">
+        <p>dL:10.77, DR: 30.27 <br> LA: 980, RA: 598</p>
+    </div>&nbsp;&nbsp;
+    <div class="tightbox">
+        <img src="images/dist_left.PNG" width="600" height="400"> 
+    </div>&nbsp;
+    <div class="tightbox">
+        <img src="images/deg_left.PNG" width="660" height="400"> 
+    </div>
+    </div>
+
 <pre>
-program details. What parts were tricky to write?
 
-In order to be able to take any audio source as an input to the project, we needed to be able to sample audio sources through the analog to digital converter (ADC) on the Raspberry Pi Pico. To do this the audio jack takes in the audio voltage inputs. This input is then passed through a high-pass biasing filter, which shifts the voltage waveforms up to contain only positive voltage components. This was done because the ADC can only sample positive waveforms. Anything fed to the ADC that has a negative value will be set to zero. While this seems relatively minor, this zeroing of values created static in the background of the audio that was quite noticeable. By shifting the voltage waves to center around 3.3 Volts instead of 0, static was able to be minimized. Finally, the voltage input was put through a low pass filter with a cutoff frequency of approximately 5kHz. This was done to filter out aliasing of relevant frequencies. Because of the limited RAM capabilities of the RP2040, we did not sample at all frequencies. This created aliasing of the unsampled frequencies in the audible range that distorted the audio. By implementing a low pass filter with a cutoff frequency at approximately the maximum frequency sampled, we were able to diminish the volume of the aliasing to lessen the distortion. The audio input was then sampled through the ADC which allowed us to have frequently updating audio input.
+    Things you tried which did not work:
+    Talk about Hanning Window
 
-After the audio processing was complete on the RP2040, the voltage signals were output through I2C to a digital to analog converter (DAC). This converter was an external chip to the Raspberry Pi Pico who’s pinout can be found in Appendix C. The two audio outputs of the DAC were wired to the two output pins of the audio jack. Each output pin on the audio jack connects to a single ear of the headphones that are plugged in. Thus, each ear was able to have a unique sound profile allowing for a more comprehensive aural experience. 
-
-The final hardware component of this project was the Video Graphics Array (VGA) which was used to display the FFT data, Audio signal input, and for debugging processes during code development. The wiring arrangement can be found in Appendix C. The three color pins were connected through 330 Ohm resistors to create a voltage divider to keep the output voltage in a usable range. Other than the three color pins, the ground, HSYNC, and VSYNC were also connected to the VGA output to display the visual outputs of our project.
-
-Outside of the code provided by previous labs of this course, we did not use or reference any other designs or code from any other source. All of the algorithms we used were developed by either ourselves or the ECE 4760 Course Staff.
-Things you tried which did not work
 </pre>
 <a id="results" class="anchor" href="results" aria-hidden="true">
     </a>
 <br><hr><br>
-<h1>Results of the design</h1>
+<h1>Results of the design</h1><br>
+
+<div class="box">
+    <div class="tightbox">
+        <h3>Presentation</h3>
+        <iframe width="672" height="378" src="https://www.youtube.com/embed/UIxs1jhvUh0" frameborder="0"></iframe>
+    </div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    <div class="tightbox">
+            <h3>Audio Demonstration</h3>
+            <iframe width="672" height="378" src="https://www.youtube.com/embed/OrlgxiX_0xs" frameborder="0"></iframe>
+    </div>
+</div>
+
 <pre>
 Any and all test data, scope traces, waveforms, etc
 speed of execution (hesitation, filcker, interactiveness, concurrency)
@@ -83,8 +164,8 @@ accuracy (numeric, music frequencies, video signal timing, etc)
 There are very minimal safety concerns for this design. One safety concern for this project was that the circuit was laid out on a breadboard, not a PCB. This means that all of the leads and wire connections are exposed to the user. It is possible that a user could discharge a capacitor if they are not careful. To mitigate this risk, the amount of exposed wire was lessened by keeping the leads of the capacitors and resistors quite short. Additionally, the size of the capacitors was small so that if they were to discharge, the voltage level would remain low. Other than this small risk, there are no major safety concerns that the user faces.
 
 One of the main concerns that we focused on during the development of this project was its usability by a person outside of the development process. This came into play mostly during the writing and design of the graphical user interface (GUI). Ideally, any user should be able to intuitively understand the functions in the GUI without having to be educated on its functions. To ensure this in our project, we picked colors that would be intuitive to user interaction. Additionally, we labeled the left and right of the user so they would understand the layout of the environment around them. A series of concentric circles were added to the design around the user to visually indicate distance measurements. Finally, to more visually display the distance from the audio source to the user, an automatically adjusting line between the two icons was included. We found that this was the best way to design our GUI to be user friendly. Outside of the user interface, the only other portion of the design that the user has to interact with is plugging in an audio source and headphones. Any headphones with an audio jack can be plugged directly into the audio jack that is in the breadboard. This allows for great flexibility in the headphone preference of the user. Additionally, any audio source that can be plugged into an audio jack can be used, which includes most laptops. While this does not include Apple iphones, adapters can be used to interface with most phones. The ability to use most audio sources and audio outputs makes our project very easy to use and flexible to most user needs.
-
 </pre>
+
 <a id="conclusions" class="anchor" href="conclusions" aria-hidden="true">
     <span aria-hidden="true" class="octicon octicon-link"></span></a>
 <br><hr><br>
@@ -125,9 +206,7 @@ Rosie: Hardware Design, Software and Hardware Integration
 <br></pre>
 
 <h2>Appendix E: Github</h2>
-<pre>
-https://github.com/rosiewildermuth/ECE4760_FinalProject_bat66_cys37_rjw252
-<br></pre>
+Link to Website Github: https://github.com/rosiewildermuth/ECE4760_FinalProject_bat66_cys37_rjw252
 
 <h2>Appendix F: References</h2> 
 <pre>
@@ -136,6 +215,7 @@ RP2040 SDK Guide: https://datasheets.raspberrypi.com/pico/raspberry-pi-pico-c-sd
 VGA Driver Page: https://vanhunteradams.com/Pico/VGA/VGA.html
 DAC Datasheet: https://vanhunteradams.com/Pico/Cricket/DAC.pdf
 ECE 4760 Lab 1: https://vanhunteradams.com/Pico/Cricket/Crickets.html
+Graphing Diagrams: https://www.desmos.com/calculator
 **include any other resources we used
 <br></pre>
 

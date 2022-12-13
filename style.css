@@ -41,15 +41,17 @@ header h2 {
 pre{
     white-space: pre-wrap;
     font-family: 'Segoe UI', 'Architects Daughter', 'Helvetica Neue', Helvetica, Arial, serif;
-    font-size: 1.2em;
-    color:#ffffff;
+
 }
 
 #main-content{
     float:left;
     padding-top: 20px;
-    padding-left: 100px;
-    padding-right: 100px;
+    padding-left: 200px;
+    padding-right: 200px;
+    font-family: 'Segoe UI', 'Architects Daughter', 'Helvetica Neue', Helvetica, Arial, serif;
+    font-size: 1.2em;
+    color: white;
 }
 
 #main-content img{
@@ -77,10 +79,27 @@ pre{
 #main-content h2 {
     margin-bottom: 4px;
     font-family: 'Segoe UI', 'Architects Daughter', 'Helvetica Neue', Helvetica, Arial, serif;
-    font-size: 24px;
-    font-weight: bold;
+    font-size: 28px;
+    font-weight: 500;
     color: #5ab9cc;
-    text-indent: 4px;
+}
+
+#main-content h3 {
+    margin-top: 12px;
+    margin-bottom: 8px;
+    font-family: 'Segoe UI', 'Architects Daughter', 'Helvetica Neue', Helvetica, Arial, serif;
+    font-size: 24px;
+    font-weight:bold;
+    color: #ffbfea;
+    text-indent: 3px;
+    text-decoration: underline; 
+  }
+
+.box{
+    display: flex;
+}
+.tightbox{
+    display: inline-block;
 }
 
 .navbar {
