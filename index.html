@@ -17,19 +17,23 @@
             <a href="#appendix">Appendix</a>
         </div>
 
-        <div class="content">
+        <header>
+            <div class="title">
+                <h1>Audio Spatializer</h1>
+                <h2>Bianca Tseng, Crystal Shi, Rosie Wildermuth</h2>
+            </div>
+        </header> 
 
-            <header>
-                <div class="title">
-                    <h1>ECE4760 Final Project</h1>
-                    <h2>Bianca Tseng, Crystal Shi, Rosie Wildermuth</h2>
-                </div>
-            </header> 
+        <section id="main-content">
+
+            <p style="color:#ffffff">
+                ECE 4760 Microcontrollers Fall 2022 Final Project
+            </p>
 
             <a id="intro" class="anchor" href="intro" aria-hidden="true">
                 <span aria-hidden="true" class="octicon octicon-link"></span></a>
-            <br><hr>
-            <h3>Project Introduction</h3>
+            <br><hr><br>
+            <h1>Project Introduction</h1>
 
             <pre>
 Our project is a real time spatial audio simulator that allows the user to adjust their aural experience by changing the location and distance of a virtual audio source.
@@ -40,8 +44,8 @@ Inspired by the concept of 8D audio, we chose to implement a user controlled spa
 
 <a id="design1" class="anchor" href="design1" aria-hidden="true">
                 <span aria-hidden="true" class="octicon octicon-link"></span></a>
-            <br><hr>
-            <h3>High level design</h3>
+            <br><hr><br>
+            <h1>High level design</h1>
 <pre>
 In recent years, spatial audio has had a grip on short video viewing platforms such as TikTok through frequent viral videos in which viewers were told “put on headphones for the full experience”. While these videos are interesting to experience, what is even more interesting is the implementation of this concept. Inspired by these videos, we decided to create our own version of spatial audio, but adapt it to be able to be experienced in real time with any audio source the user wanted. Originally we began our project wanting to have the system track the user’s head and change the sound based on positioning. But because of hardware and time constraints, a GUI was used instead to mimic head movement. This turned out to be a great decision as it makes the final product more modular.
 background math
@@ -53,8 +57,8 @@ One of the issues that we have to keep in mind when demonstrating our project is
 </pre>
 <a id="design2" class="anchor" href="design2" aria-hidden="true">
     <span aria-hidden="true" class="octicon octicon-link"></span></a>
-<br><hr>
-<h3>Program/hardware design</h3>
+<br><hr><br>
+<h1>Program/hardware design</h1>
 <pre>
 program details. What parts were tricky to write?
 
@@ -66,12 +70,11 @@ The final hardware component of this project was the Video Graphics Array (VGA) 
 
 Outside of the code provided by previous labs of this course, we did not use or reference any other designs or code from any other source. All of the algorithms we used were developed by either ourselves or the ECE 4760 Course Staff.
 Things you tried which did not work
-
 </pre>
 <a id="results" class="anchor" href="results" aria-hidden="true">
-    <span aria-hidden="true" class="octicon octicon-link"></span></a>
-<br><hr>
-<h3>Results of the design</h3>
+    </a>
+<br><hr><br>
+<h1>Results of the design</h1>
 <pre>
 Any and all test data, scope traces, waveforms, etc
 speed of execution (hesitation, filcker, interactiveness, concurrency)
@@ -84,8 +87,8 @@ One of the main concerns that we focused on during the development of this proje
 </pre>
 <a id="conclusions" class="anchor" href="conclusions" aria-hidden="true">
     <span aria-hidden="true" class="octicon octicon-link"></span></a>
-<br><hr>
-<h3>Conclusions</h3>
+<br><hr><br>
+<h1>Conclusions</h1>
 <pre>
 Analyze your design in terms of how the results met your expectations. What might you do differently next time?
 How did your design conform to the applicable standards?
@@ -95,38 +98,53 @@ There are no intellectual property considerations in the design of this project.
 </pre>
 <a id="appendix" class="anchor" href="appendix" aria-hidden="true">
     <span aria-hidden="true" class="octicon octicon-link"></span></a>
-<br><hr>
-<h3>Appendix</h3>
+<br><hr><br>
+<h1>Appendix</h1>
+
+<h2>Appendix A: Permissions</h2>
 <pre>
-Appendix A (permissions)
 "The group approves this report for inclusion on the course website.
 "The group approves the video for inclusion on the course youtube channel."
-Additional appendices
-Appendix B: Commented Verilog and/or program listings. (pull from drive, or link git if we upload)
-Appendix C: Hardware Schematic
+<br></pre>
 
+<h2>Appendix B: Commented program listings</h2>
+<pre>
+TODO: (pull from drive, or link git if we upload)
+<br></pre>
 
+<h2>Appendix C: Hardware Schematic</h2>
+<pre>
+TODO: insert schematic here 
+<br></pre>
 
-Appendix D, Responsibility Breakdown:
+<h2>Appendix D: Responsibility Breakdown:</h2>
+<pre>
 Bianca: Software Design, Audio Adaptation Algorithm Development
 Crystal: Software Design, GUI Design and Implementation
 Rosie: Hardware Design, Software and Hardware Integration
+<br></pre>
 
-Appendix E, Github:
+<h2>Appendix E: Github</h2>
+<pre>
 https://github.com/rosiewildermuth/ECE4760_FinalProject_bat66_cys37_rjw252
+<br></pre>
 
-Appendix F, References: 
+<h2>Appendix F: References</h2> 
+<pre>
 Pi Pico Datasheet: https://datasheets.raspberrypi.com/pico/pico-datasheet.pdf
 RP2040 SDK Guide: https://datasheets.raspberrypi.com/pico/raspberry-pi-pico-c-sdk.pdf
 VGA Driver Page: https://vanhunteradams.com/Pico/VGA/VGA.html
 DAC Datasheet: https://vanhunteradams.com/Pico/Cricket/DAC.pdf
 ECE 4760 Lab 1: https://vanhunteradams.com/Pico/Cricket/Crickets.html
 **include any other resources we used
-            </pre>
-        </div>
+<br></pre>
+
+
+
+        </section>
 
         <div class="footer">
-            Footer
+            <p>Footer</p>
         </div>
 
     </body>
