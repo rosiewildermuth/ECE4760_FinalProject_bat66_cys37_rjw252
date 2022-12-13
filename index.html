@@ -127,24 +127,26 @@
                 The left ear therefore has a maximum amplitude at 45 degrees, and the right ear at -45 degrees. This relationship is shown as the orange shapes in Figures 1-4 below, 
                 with the radius representing the amplitude at that angle. We chose this model because we knew the shape of the external ear would attenuate sound more from certain angles, 
                 and we also wanted amplitudes to be softer behind the head than in front. 
-                The choice of cosine was intuitive to make the transition from minimum to maximum amplitude very smooth, as can be seen in the roundness of the diagram.
+                The choice of cosine was intuitive to make the transition from minimum to maximum amplitude very smooth, as can be seen in the roundness of the diagrams.
             </p>
 
             <div class="tightbox">
                 <p>dL: 18.03, DR: 18.03 <br> LA: 799, RA: 799</p>
             </div>&nbsp;&nbsp;
             <div class="box">
-                <p><span class="image"><img src="images/dist_15_front.PNG" alt="Diagram of audio" /></span>
-                <p><span class="image"><img src="images/deg_15_front.PNG" alt="Diagram of audio" /></span>
+                <p><span class="image"><img src="images/dist_15_front.png" alt="Diagram of audio" /></span>
+                <p><span class="image"><img src="images/deg_15_front.png" alt="Diagram of audio" /></span>
             </div>
+            <p>Figures 1 and 2. Diagrams of audio calculations for source directly in front of user.</p>
             <br><br>
             <div class="tightbox">
                 <p>dL: 10.77, DR: 30.27 <br> LA: 980, RA: 598</p>
             </div>&nbsp;&nbsp;
             <div class="box">
-                <p><span class="image"><img src="images/dist_15_front.PNG" alt="Diagram of audio" /></span>
-                <p><span class="image"><img src="images/deg_15_front.PNG" alt="Diagram of audio" /></span>
+                <p><span class="image"><img src="images/dist_left.png" alt="Diagram of audio" /></span>
+                <p><span class="image"><img src="images/deg_left.png" alt="Diagram of audio" /></span>
             </div>
+             <p>Figures 3 and 4. Diagrams of audio calculations for source to the left of user.</p>
 
             <p>
                 After calculating the angle-based amplitude as described above, we then scaled the amplitude inversely proportional to the distance. 
@@ -167,10 +169,14 @@
 
             <h1>Hardware Design</h1>
 
-            We used the RP2040 (Raspberry Pi Pico) primarily for this project. A diagram of our circuit is included in appendix C, including the RP2040, a Digital to Analog Converter,
+            We used the RP2040 (Raspberry Pi Pico) for this project. A diagram of our circuit is included in appendix C, including the RP2040, a Digital to Analog Converter,
             high pass biasing and low pass filters, and two audio jacks. 
             <br>
-            <p>Figure: Hardware Schematic</p>
+            
+            <div class="box">
+                <p><span class="image"><img src="images/hardware.png" alt="Hardware schematic" /></span>
+            </div>
+            <p>Figure 5. Hardware Schematic</p>
 
             <h2>Audio Input</h2>
             <p>
@@ -234,39 +240,40 @@
                 Then the main control thread signals a semaphore telling the fft threads that there are enough samples to perform audio processing. 
             </p>
             <p>
-                Then while the fft threads run the processing algorithms, the main control thread also outputs one audio sample per channel to the DAC to be played. 
+                While the fft threads run the processing algorithms, the main control thread also outputs one audio sample per channel to the DAC to be played. 
                 Just like how the input is read into an input buffer, the output is played out of a DAC_output buffer kept for each channel. The data is read from the beginning to the end, 
-                then once the DAC_output buffer runs out of values to output, it moves the last 200 values to the beginning of the buffer, then loads 2048 values from the fft_out buffer. 
-                We keep the last 200 values because of the left and right delays requiring indexing back in time, and we set 200 as a conservative amount that will be enough for the index 
-                to never reach 0. Once the values from fft_out are loaded, another semaphore is signaled to both fft threads, telling the fft threads to load the next results into fr_out. 
-                This essentially makes it so that DAC_output will never run out of values since we have fft_out essentially as a buffer for the buffer.
+                then once the DAC_output buffer runs out of values to output, it moves its last 200 values to the beginning of the buffer, then loads 2048 values from the fft_out buffer. 
+                We keep the last 200 values because implementing the left and right delays requires indexing back in time, so keeping 200 extra samples is a conservative amount that allows us 
+                enough leeway to index backwards and implement the delays. Once the values from fft_out are loaded, another semaphore is signaled to both fft threads, telling the fft threads to load the next results into fr_out. 
+                This essentially makes it so that DAC_output will never run out of values, since fft_out acts as a buffer for the buffer.
             </p>
 
             <p>
-                After being signaled to perform audio processing, the fft threads first perform FFT using the Tukey Cooley algorithm implemented in the Demo code, 
-                then a low pass filter is applied using element-wise multiplication of a filter with the frequency spectrum produced by the FFT at the appropriate cutoff frequency. 
-                We strategically choose the left and right amplitudes to range from 0 to 1000, which are very close to the number of bins (1024) we consider when selecting a cutoff frequency. 
+                After being signaled to perform audio processing, the fft threads first perform an FFT using the Tukey-Cooley algorithm implemented in the Lab 1 demo code. 
+                Then, a low pass filter is applied using element-wise multiplication between the samples and the filter's FFT, which changes based on the desired cutoff frequency.
+                Since our calculated left and right amplitudes range from 0 to 1000, which is very close to the number of bins (1024) we consider when selecting a cutoff frequency,
+                we realized this was also a good proxy for choosing a cutoff frequency since the cutoff frequency is inversely proportional to the distance, similar to the amplitude.
                 Therefore, we simply use the target amplitude for the channel as its cutoff bin, with a large amplitude corresponding to a very high cutoff frequency (small effect), and a 
-                low amplitude corresponding to a lower cutoff frequency (big effect). Then, we perform IFFT by getting the conjugate of the resulting frequency signal from the lowpass filter, 
-                performing FFT on it, then getting the conjugate of that result, which will be in time-domain. Then, once the main control thread signals that the DAC_output buffer has been 
-                depleted and has read and loaded the values from fft_buf, the fft threads will calculate the appropriately scaled (between 0 to 4096) magnitude from the real real and complex 
-                parts and load the values into fft_out_0 and fft_out_1, then repeat the loop of processing the next set of samples once they have been loaded into fr_in from fr_buf.
+                low amplitude corresponding to a lower cutoff frequency (large effect). Then, we perform am IFFT by getting the conjugate of the resulting frequency signal from the lowpass filter, 
+                performing an FFT on it, then getting the conjugate of that result, which will be in time-domain. Then, once the main control thread signals that the DAC_output buffer has been 
+                depleted and has read and loaded the values from fft_buf, the fft threads will calculate the appropriately scaled magnitude (between 0 to 4096) from the real and complex 
+                parts and load the values into fft_out_0 and fft_out_1. 
+                Then, when the next set of samples are loaded into fr_in from fr_buf, this processing repeats for the new set of samples.
             </p>
 
             <h2>Concurrency</h2>
             <p>
-                Each fft thread needs to finish processing within 2048 cycles at 12.5k Hz, as that is how long it takes for the main control thread to fill up fr_buf completely, 
-                and also to read all values of DAC_output, and so if the fft thread cannot finish processing in that time, then eventually the fft threads will fall behind and no 
+                Each fft thread needs to finish processing within 2048 cycles at 12.5k Hz, as that is how long it takes for the main control thread to fill up fr_buf completely
+                and read all values of the DAC_output. Thus, if the fft thread cannot finish processing in that time, the fft threads will eventually fall behind and no 
                 longer be able to keep up with the main control thread. 
             </p>
             <p>
                 We will consider the first execution of the fft threads to show why fr_in will never be overwritten by fr_buf before the result of IFFT is written to fr_out. 
                 The fft threads wait on the semaphore while the main control thread reads and outputs audio data. Once it has read 2048 samples, it has also output 2048 samples. 
-                The results of fr_in are allowed to be loaded into fr_out in 200 more cycles, as the DAC output buffer is 2248 length, and only the first iteration through the DAC 
-                output will be 2248 samples, the rest starting from 200 and going through 2048 samples. And so the fft algorithm runs and by the time it completes, it is allowed to 
-                immediately save its result, and the fft algorithm, including the time it takes to write its result to fr_out, must complete in 2048 cycles, and so fr_buf, fr_in, and 
-                fr_out are all synchronized properly. Even if the initial value of the pointer to DAC_output started at 200 instead of 0, then the fft will start and immediately be 
-                allowed to write its value, and so the values will still be consistent and synchronized.
+                Thus, the results of fr_in are allowed to be loaded into fr_out after 200 more cycles, as the DAC output buffer is 2248 elements long. Only the first iteration through the DAC 
+                output will be 2248 samples, since the rest will start from 200 due to the extra buffer we added and thus go through 2048 samples each time.
+                By the time the FFT algorithm runs and completes, it is allowed to immediately save its result. It must calculate and write its result to fr_out all within 2048 cycles; 
+                thus, fr_buf, fr_in, and fr_out are all synchronized properly. 
             </p>
 
             <h2> Optimizations </h2>
@@ -274,34 +281,35 @@
                 Initially, we had the processing operations for channel 0 and channel 1 in the same thread executing sequentially. 
                 Once we separated them into two separate fft threads on core 0, the speed of the processing significantly improved. 
                 Then, after we split the two threads into different cores, speed significantly improved further, as the audio processing 
-                for both channels execute at roughly the same time as they wait on the same conditions, and therefore running them on the same core will be a lot less efficient.
+                for both channels executes at roughly the same time because they wait on the same conditions.
+                Additionally, because they process two independent channel streams, they are not data-dependent, and we are able to
+                process them efficiently in parallel on two different cores.
             </p>
 
             <p>
-                The program runs on two cores, and in the final code, core 0 runs the threads for reading Serial data from the python GUI, processing audio for channel 0, 
-                and the main control loop, and core 1 runs the threads for graphing FFT and DAC data on the VGA monitor, and processing audio for channel 1. After applying the 
-                above optimizations, we were able to push our sampling frequency from 8kHz to 12.5 kHz, and this was the limit as we could not push the frequency any higher without 
+                The program runs on two cores in order to maximize optimization. Core 0 runs the threads for reading serial data from the Python GUI, processing audio for channel 0, 
+                and the main control loop, whereas core 1 runs the threads for graphing the FFT and DAC data on the VGA monitor, and processing audio for channel 1. After applying the 
+                above optimizations, we were able to push our sampling frequency from 8kHz to 12.5 kHz; however, we were not able to push it past this without 
                 risk of errors or data inconsistencies. It was obvious when the cycle time was not long enough (sampling frequency too high), as the VGA showed very extreme and 
-                impossible values output for the FFT and the DAC output, which either corresponded to the main control thread not being able to finish reading, calculating delays, 
-                and writing, or the fft threads not being able to finish and write the ifft results from fr_in to fr_out. 
-                Therefore, we were able to conclude that we could not significantly increase the sampling frequency past 12.5 kHz.
+                impossible output values for the FFT and the DAC output, signifying that either the main control thread could not finish reading, calculating delays, 
+                and writing, or the FFT threads were not able to finish calculating and writing the IFFT results from fr_in to fr_out. 
             </p>
 
             <h2> VGA Display</h2>
             <p>
-                The VGA thread on core 1 is in charge of updating the VGA display with the FFT and runs every 1000 microseconds, with a throttle of 10, meaning the display 
-                is updated every 10,000 microseconds. These values were somewhat arbitrarily chosen based on user experience and testing to find good update speeds for the L_amp, 
-                R_amp, L_delay, and R_delay values. So every 10,000 microseconds, the VGA thread will redraw the screen with the current left and right amplitude and delay values 
-                being used at the output, and the most recently updated FFT (after lowpass) values and DAC_output buffer contents spanning the entire length of the display.
+                The VGA thread on core 1 is in charge of updating the VGA display with the FFT and runs every 1000 microseconds with a throttle of 10, meaning the display 
+                is updated every 10000 microseconds. These values were somewhat arbitrarily chosen based on user experience and testing to find good update speeds for the L_amp, 
+                R_amp, L_delay, and R_delay values. Every 10000 microseconds, the VGA thread will redraw the screen with the current left and right amplitude and delay values 
+                being used at the output, and graph the most recent post-lowpass FFT and DAC_output buffer contents.
             </p>
             <p>
-                The frequency of new FFT values being calculated is once every 2048 cycles at 12.5 kHz, which is 163,840 microseconds. 
-                Slightly better performance could be achieved for the DAC_output by further synchronizing when the vga graphs the FFT since currently, 
+                New FFT values are calculated once every 2048 cycles at a sampling frequency of 12.5 kHz, which is means that it happens once every 80 * 2048 = 163,840 microseconds.
+                Slightly better performance could be achieved for the DAC_output by further synchronizing when the VGA graphs the FFT since currently, 
                 the VGA thread redraws the FFT graph 16 times more often than the FFT values change. Additionally, the DAC_output (top) graph looks a bit choppy and not very smooth, 
-                and that makes sense given that the values are not being written continuously, but the contents of the DAC_output are all written at once. Especially because of the newer 
-                addition of the 200 samples that overlap, the DAC_output does not look as smooth graphed in the current method. Another method to consider may be to increase the vga graphing 
+                because the contents of the DAC_output are all written at once instead of sequentially. Especially because of the newer 
+                addition of the 200 samples that overlap, the DAC_output does not look as smooth graphed in the current method. Another method to consider may be to increase the VGA graphing 
                 frequency to match the rate of DAC writes, and then to always graph the current value being output to the DAC. 
-                This may decrease performance as the vga thread would need to execute a lot more often than it currently is.
+                However, this may decrease performance as the VGA thread would need to execute a lot more often than it currently is.
 
             </p>
 
@@ -347,22 +355,22 @@
                 denoting what each following value is for. When parsing the string, we use a small finite state machine to iterate through the characters in the string and process the 
                 numbers following each character so that the corresponding variables in the C program are updated. After a value is parsed, the appropriate variable is updated accordingly. 
                 There is no need to enforce consistency or synchronize the serial thread with the other threads, as the rest of the program only reads the values to use in calculations, 
-                and it is fine if there are multiple reads to the same value or if a value is skipped over, 
-                as the python program sends messages periodically, as opposed to only when data changes. This is so that we can avoid situations where we skip over or miss one change.
+                and it is fine if there are multiple reads to the same value or if a value is skipped over. Since the Python program sends messages every update (at 60 Hz), the C program 
+                will always be able to read in updated values, so if a value is skipped over the thread can simply read the next value.
             </p>
 
             <h2>Challenges and Attempts</h2>
             <p>
-                The original FFT implementation given in the Demo code for the course included using a hanning window to normalize data before FFT is performed, since the FFT algorithm
+                The original FFT implementation given in the demo code for the course included using a Hanning window to normalize data before an FFT is performed, since the FFT algorithm
                 assumes periodic data. The end of the sampling window may not be continuous with the beginning, leading to jumps in the data interpreted as square waves, which produce a lot of noise in all frequencies.
-                However, because we need to revert back to time domain through IFFT after processing, we cannot reverse the effects of normaliztion through hanning window, as we cannot divide by zero
+                However, because we need to revert back to the time domain using an IFFT after processing, we cannot reverse the effects of normalization through Hanning window, as we cannot divide by zero
                 for samples near the beginning and end. After removing
-                the hanning window, the audio was roughly the same, except for some noise and clicks happening at the same rate as the samping frequency. These clicks are the result of the 
+                the Hanning window, the audio was roughly the same, except for some noise and clicks happening at the same rate as the sampling frequency. These clicks are the result of the 
                 end of the sample not matching up with the beginning of the sample. Our audio quality could be significantly improved if we solve this issue, and further research led us to 
-                conclude that the solution would be to use overlapping hanning windows, where we perform FFT on samples that overlap, such that we discard the FFT results for samples that are near the beginning
-                and end of the sampling window. However, we knew that this would not be feasible, as having an overlap of half would require double the processing requirements, and we were already
-                pushing the limits for our current sampling frequency. We decided that the amount of noise and the softness of the clicks were not noticeable enough to significantly lower our
-                sampling frequency to implement this solution.
+                conclude that the solution would be to use overlapping Hanning windows. This involves performing an FFT on samples that overlap and discarding the FFT results for samples that are near the beginning
+                or end of the sampling window. However, we knew that this would not be feasible, as having an overlap of half of the samples would require double the processing requirements, and we were already
+                pushing the limits for our current sampling frequency. We decided that the amount of noise and the softness of the clicks were not noticeable enough to make it worth significantly lowering our
+                sampling frequency to implement this solution. Additionally, lowering the sampling frequency would also lower the audio quality, since 12.5 kHz is already lower than most audio sampling frequencies.
             </p>
 
             <a id="results" class="anchor" href="results" aria-hidden="true"></a>
@@ -378,8 +386,8 @@
             </p>
 
             <p>
-                The following videos are a demonstration given in class to Professor Adams, and a demonstration of our spatial audio effects produced
-                by connecting the DAC output into the microphone jack on a laptop, playing non-licensed music, and interfacing with the GUI. <br>
+                The following videos are a demonstration given in class to Professor Adams, and a demonstration of our spatial audio effects recorded
+                by connecting the DAC output into the microphone jack on a laptop and syncing this audio with the video of our interaction with the GUI. <br>
             </p>
 
             <div class="box">
@@ -418,10 +426,10 @@
             </p>
 
             <p>
-                The number of samples we use for FFT and overall audio processing is 2048, meaning that FFT produces 2048 bins, and with the content being symmetrical, we consider 
+                The number of samples we use for FFT and overall audio processing is 2048, meaning that the FFT produces 2048 bins, and with the content of the bins being symmetrical, we only need to consider 
                 the first 1024 bins. We know our Nyquist frequency is 6125, so we know that our frequency resolution, or frequency coverage per bin, is around 6 Hz. Even though a finer 
                 frequency resolution would result in less noise, due to space constraints we could not increase the number of samples to 4096, and we prioritized a 
-                higher sampling frequency than a slightly smaller frequency resolution, and there was not a noticeable difference in audio quality because of the frequency resolution either.
+                higher sampling frequency than a slightly smaller frequency resolution because the lower frequency resolution is not very noticeable to the human ear.
             </p>
 
             <h2> Safety </h2>
@@ -474,14 +482,14 @@
             </p>
 
             <p>
-                Although the final design differed from our original design specification, the final design that we decided on was much more robust that was originally thought up. 
+                Although the final design differed from our original design specification, the final design that we decided on was much more robust that our original design. 
                 Initially, we had decided to implement a head tracking algorithm which would have used the MPU accelerometer/gyroscope module which was used during Lab 3 for this course. 
                 Because of the nature of head motion, the gyroscope was the only usable part of this module as the force of gravity on the sensor would not change with simple head rotations. 
                 After a series of tests with this sensor, the entire idea was thrown out. This was done for two major reasons. The first was that with just gyroscope measurements, 
                 it was difficult to calculate the complementary angle of the head. Without accelerometer measurements to re-zero the angle value, the calculation strayed to one extreme 
-                or another losing accuracy very quickly. The second reason was that even if the angle was being calculated correctly, it was likely that the system would have lost angle 
+                or another, losing accuracy very quickly. The second reason was that even if the angle was being calculated correctly, it was likely that the system would have lost angle 
                 accuracy and would need to be consistently re-zeroed to match the user’s head. 
-                This lack of accuracy and the need  for user-assistance in head tracking functionality led to our final decision to go in a different direction.
+                This lack of accuracy and the need for constant user-adjustment in head tracking functionality led to our final decision to go in a different direction.
             </p>
             <p>
                 As an alternative to the MPU module we initially planned to use, we decided to use a graphical user interface (GUI) to allow the user to control the 
@@ -498,8 +506,8 @@
             </p>
 
             <p>
-                In the future, we would explore the possibility of integrating bluetooth headphones to be compatible with our system. 
-                In today’s technology market, most of the widely available headphones have bluetooth compatibility, so it would be interesting to see how this interfaced with our project. 
+                In the future, we would explore the possibility of integrating Bluetooth headphones to be compatible with our system. 
+                In today’s technology market, most of the widely available headphones have Bluetooth compatibility, so it would be interesting to see how this could interface with our project. 
                 Likely this would have to be done with some sort of dongle attachment to the system, which introduces more hardware complexity.
             </p>
 
